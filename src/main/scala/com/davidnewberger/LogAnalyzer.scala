@@ -11,7 +11,7 @@ import org.apache.spark.{SparkConf, SparkContext}
 object LogAnalyzer extends Serializable {
 
 
-  // Schema for logs
+  // Schema for Apache access logs
   case class ApacheAccessLog(ipAddress: String,
                              clientIdentd: String,
                              userId: String,

@@ -49,7 +49,7 @@ object LogAnalyzer extends Serializable {
       m.group(11))
   }
   // How big a batch is
-  val BATCH_INTERVAL = Duration(2 * 1000)
+  val BATCH_INTERVAL = Duration(5 * 1000)
   // How big of a window of time to capture (must be a multiple of the batch interval)
   // Value is currently in milliseconds
   val WINDOW_LENGTH = Duration(30 * 1000)
@@ -60,6 +60,7 @@ object LogAnalyzer extends Serializable {
 
   def main(args: Array[String]) {
 
+    // Runs locally with as many threads a cores on the machine
     val master = "local[*]"
     val sparkConf = new SparkConf().setMaster(master).setAppName("Log Analyzer")
     val sc = new SparkContext(sparkConf)
@@ -83,6 +84,8 @@ object LogAnalyzer extends Serializable {
       //If this is true will periodically commit offset of message to Zookeeper. Would then be used when the process fails
       ConsumerConfig.ENABLE_AUTO_COMMIT_CONFIG -> "false"
     )
+
+    // TODO: Make checkpointing work!
 
     /**
       * Checkpointing needs to be enabled to use updateStateByKey
@@ -114,13 +117,17 @@ object LogAnalyzer extends Serializable {
       .transform(filterIPAddress)
     ipAddressDStream.foreachRDD(rdd => {
       if (!rdd.isEmpty())
-      rdd.saveAsTextFile("/tmp/DDoSDetector/SuspectIPs")
+          rdd
+            .repartition(1)
+            .saveAsTextFile("/tmp/DDoSDetector/SuspectIPs")
 
     })
 
     ssc.start()
     ssc.awaitTermination()
   }
+
+  // TODO: Handle Producer offline for extended period of time
 
   /**
     * Stores and computes the running sum of the IP addresses
